@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leakage Detector Dashboard</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --ink:#15181d; --muted:#6a7280; --line:#e3e6eb;
+    --ok:#1a9a5b; --warn:#d98a00; --bad:#d6342b; --accent:#2257d6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0f1115; --card:#181b21; --ink:#eceef2; --muted:#9097a3; --line:#2a2e37;
+           --ok:#3ecf8e; --warn:#f0b429; --bad:#ff6b61; --accent:#6c93ff; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--card)}
+  h1{font-size:18px;margin:0}
+  .sub{color:var(--muted);font-size:13px}
+  main{max-width:1100px;margin:0 auto;padding:20px 16px 90px;display:grid;gap:16px}
+  .banner{padding:14px 16px;border-radius:12px;font-weight:600;border:1px solid var(--line);background:var(--card)}
+  .banner.ok{border-color:var(--ok);color:var(--ok)}
+  .banner.warn{border-color:var(--warn);color:var(--warn)}
+  .banner.bad{border-color:var(--bad);color:var(--bad)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .val{font-size:26px;font-weight:650;margin-top:2px;font-variant-numeric:tabular-nums}
+  .unit{font-size:13px;color:var(--muted);font-weight:400;margin-left:3px}
+  .row{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+  @media(max-width:800px){.row{grid-template-columns:1fr}}
+  canvas{width:100%;height:230px;display:block}
+  ul{list-style:none;margin:8px 0 0;padding:0;max-height:260px;overflow:auto}
+  li{padding:7px 0;border-top:1px solid var(--line);font-size:13px}
+  li b.ALERT,li b.FAULT{color:var(--bad)} li b.CLEARED{color:var(--ok)} li b.RELAY{color:var(--accent)}
+  button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 14px;cursor:pointer}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+  .btns{display:flex;gap:8px;flex-wrap:wrap}
+  /* chat */
+  #fab{position:fixed;right:18px;bottom:18px;width:54px;height:54px;border-radius:50%;background:var(--accent);color:#fff;border:0;font-size:24px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  #chat{position:fixed;right:18px;bottom:84px;width:min(370px,calc(100vw - 32px));height:min(520px,70vh);display:none;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.25);overflow:hidden}
+  #chat.open{display:flex}
+  #chat header{padding:12px 14px}
+  #msgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .m{max-width:85%;padding:8px 12px;border-radius:12px;white-space:pre-wrap;font-size:14px}
+  .m.bot{background:var(--bg);align-self:flex-start}
+  .m.me{background:var(--accent);color:#fff;align-self:flex-end}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 8px}
+  .chips button{font-size:12px;padding:4px 10px;border-radius:999px}
+  #form{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
+  #form input{flex:1;font:inherit;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>⚡ Smart Electricity Leakage Detector</h1><div class="sub" id="device">connecting…</div></div>
+  <div class="btns"><button id="relayOff" class="danger">Cut load</button><button id="relayOn" class="primary">Restore load</button></div>
+</header>
+<main>
+  <div id="banner" class="banner">Waiting for data…</div>
+  <div class="grid">
+    <div class="card"><div class="label">Current</div><div class="val" id="cur">–<span class="unit">A</span></div></div>
+    <div class="card"><div class="label">Voltage</div><div class="val" id="vol">–<span class="unit">V</span></div></div>
+    <div class="card"><div class="label">Power</div><div class="val" id="pow">–<span class="unit">W</span></div></div>
+    <div class="card"><div class="label">Temperature</div><div class="val" id="tmp">–<span class="unit">°C</span></div></div>
+    <div class="card"><div class="label">Room</div><div class="val" id="occ">–</div></div>
+    <div class="card"><div class="label">Relay</div><div class="val" id="rel">–</div></div>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="label">Energy today</div><div class="val" id="kwh">–<span class="unit">kWh</span></div></div>
+    <div class="card"><div class="label">Cost today</div><div class="val" id="cost">–</div></div>
+    <div class="card"><div class="label">Wasted (empty room)</div><div class="val" id="waste">–<span class="unit">kWh</span></div></div>
+    <div class="card"><div class="label">Alerts today</div><div class="val" id="alerts">–</div></div>
+  </div>
+  <div class="row">
+    <div class="card"><div class="label">Power, last 30 minutes (red = room empty & load on)</div><canvas id="chart"></canvas></div>
+    <div class="card"><div class="label">Events</div><ul id="events"></ul></div>
+  </div>
+</main>
+
+<button id="fab" aria-label="Open chat">💬</button>
+<section id="chat" aria-label="Assistant">
+  <header><div><b>Assistant</b><div class="sub" id="mode">Ask about your room</div></div><button id="close">✕</button></header>
+  <div id="msgs"></div>
+  <div class="chips" id="chips"></div>
+  <form id="form"><input id="q" placeholder="Ask something…" autocomplete="off"><button class="primary">Send</button></form>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+const f = (n, d=1) => (n==null||isNaN(n)) ? '–' : Number(n).toFixed(d);
+const setVal = (id, v, unit) => { $(id).innerHTML = v + (unit ? `<span class="unit">${unit}</span>` : ''); };
+
+async function refresh(){
+  try{
+    const {latest:r, today:t} = await (await fetch('/api/latest')).json();
+    if(!r){ $('banner').textContent='No data yet — start the ESP32 or simulator.'; return; }
+    $('device').textContent = `${r.device_id} · ${r.online ? 'online' : 'offline (last seen '+r.age_s+'s ago)'}`;
+    setVal('cur', f(r.current,2), 'A'); setVal('vol', f(r.voltage,0), 'V');
+    setVal('pow', f(r.power,0), 'W');  setVal('tmp', f(r.temp,1), '°C');
+    $('occ').textContent = r.occupied ? 'Occupied' : 'Empty';
+    $('rel').textContent = r.relay ? 'Connected' : 'Cut off';
+    setVal('kwh', f(t.kwh,3), 'kWh'); $('cost').textContent = 'Rs ' + f(t.cost,2);
+    setVal('waste', f(t.wasted_kwh,3), 'kWh'); $('alerts').textContent = t.alerts;
+    const b = $('banner');
+    if(r.fault){ b.className='banner bad'; b.textContent = '⚠ Safety fault: ' + r.fault.replace('_',' ').toLowerCase(); }
+    else if(r.alert){ b.className='banner warn'; b.textContent = '🔔 Room is empty but appliances are still ON — buzzer active'; }
+    else { b.className='banner ok'; b.textContent = '✓ All normal'; }
+  }catch(e){ $('banner').textContent='Server unreachable'; }
+  try{ drawChart(await (await fetch('/api/history?minutes=30')).json()); }catch(e){}
+  try{
+    const ev = await (await fetch('/api/events')).json();
+    $('events').innerHTML = ev.length ? ev.map(e=>`<li><b class="${e.kind}">${e.kind}</b> ${e.detail}<br><span class="sub">${new Date(e.ts*1000).toLocaleTimeString()}</span></li>`).join('') : '<li class="sub">No events yet</li>';
+  }catch(e){}
+}
+
+function drawChart(rows){
+  const c = $('chart'), dpr = devicePixelRatio||1;
+  c.width = c.clientWidth*dpr; c.height = c.clientHeight*dpr;
+  const g = c.getContext('2d'); g.scale(dpr,dpr);
+  const W=c.clientWidth, H=c.clientHeight, pad=30;
+  const css = getComputedStyle(document.documentElement);
+  g.clearRect(0,0,W,H);
+  if(rows.length<2){ g.fillStyle=css.getPropertyValue('--muted'); g.fillText('Not enough data yet',pad,H/2); return; }
+  const t0=rows[0].ts, t1=rows[rows.length-1].ts, max=Math.max(50,...rows.map(r=>r.power))*1.1;
+  const x=t=>pad+(t-t0)/(t1-t0||1)*(W-pad-8), y=p=>H-pad-(p/max)*(H-pad-10);
+  g.strokeStyle=css.getPropertyValue('--line'); g.fillStyle=css.getPropertyValue('--muted'); g.font='11px system-ui';
+  for(let i=0;i<=4;i++){ const v=max*i/4, yy=y(v); g.beginPath(); g.moveTo(pad,yy); g.lineTo(W-8,yy); g.stroke(); g.fillText(Math.round(v)+'W',0,yy+4); }
+  for(let i=0;i<rows.length-1;i++){
+    const r=rows[i];
+    g.strokeStyle = (!r.occupied && r.load_on) ? css.getPropertyValue('--bad') : css.getPropertyValue('--accent');
+    g.lineWidth=2; g.beginPath(); g.moveTo(x(r.ts),y(r.power)); g.lineTo(x(rows[i+1].ts),y(rows[i+1].power)); g.stroke();
+  }
+}
+
+async function post(url, body){ return (await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})).json(); }
+$('relayOff').onclick = async()=>{ if(confirm('Cut power to the connected load?')){ await post('/api/relay',{on:false}); setTimeout(refresh,500);} };
+$('relayOn').onclick  = async()=>{ await post('/api/relay',{on:true}); setTimeout(refresh,500); };
+
+// ---- chat ----
+const msgs=$('msgs');
+function add(text, who){ const d=document.createElement('div'); d.className='m '+who; d.textContent=text; msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight; return d; }
+async function ask(text){
+  if(!text.trim()) return;
+  add(text,'me'); const wait=add('…','bot');
+  try{
+    const r = await post('/api/chat',{message:text});
+    wait.textContent = r.reply; $('mode').textContent = r.mode==='llm' ? 'AI mode' : 'Rule-based mode';
+    if(r.action) setTimeout(refresh,800);
+  }catch(e){ wait.textContent='Could not reach the server.'; }
+}
+$('form').onsubmit = e=>{ e.preventDefault(); const v=$('q').value; $('q').value=''; ask(v); };
+$('fab').onclick = ()=>{ $('chat').classList.toggle('open'); if(!msgs.children.length) add("Hi! I can tell you the room status, energy use, alerts, or switch the load off. What would you like to know?",'bot'); };
+$('close').onclick = ()=> $('chat').classList.remove('open');
+['Status','Energy today','Any alerts?','How much did I waste?','Tips to save power','Turn off'].forEach(t=>{
+  const b=document.createElement('button'); b.type='button'; b.textContent=t; b.onclick=()=>ask(t); $('chips').appendChild(b);
+});
+
+refresh(); setInterval(refresh, 5000);
+</script>
+</body>
+</html>
