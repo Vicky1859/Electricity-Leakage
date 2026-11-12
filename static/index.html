@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leakage Detector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a1218; --side:#0c161d; --card:#0f1a22; --card2:#12202a; --line:#1b2c36;
+    --ink:#e8f1f2; --muted:#7d909a; --teal:#3fe0b5; --teal-d:#123a33; --blue:#5aa9ff; --amber:#f5a524; --red:#ff6b6b;
+    --font:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--font)}
+  svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+
+  /* ---------- sidebar ---------- */
+  aside{background:var(--side);border-right:1px solid var(--line);padding:24px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .brand{display:flex;gap:12px;align-items:center;padding:0 8px 26px}
+  .logo{width:44px;height:44px;border-radius:12px;background:var(--teal);color:#06231c;display:grid;place-items:center;font-weight:700;font-size:22px}
+  .brand b{font-size:19px;display:block;line-height:1.1}
+  .brand span{font-size:10px;letter-spacing:.16em;color:var(--muted)}
+  .grp{font-size:11px;letter-spacing:.2em;color:var(--muted);padding:14px 10px 8px}
+  nav a{display:flex;align-items:center;gap:14px;padding:13px 14px;border-radius:12px;color:#b4c4cb;text-decoration:none;cursor:pointer;margin-bottom:4px}
+  nav a:hover{background:#0f1d26}
+  nav a.on{background:var(--teal-d);color:var(--teal)}
+  .badge{margin-left:auto;background:#22333d;color:var(--ink);border-radius:999px;font-size:12px;min-width:24px;height:24px;display:grid;place-items:center;padding:0 7px}
+  .side-foot{margin-top:auto;border-top:1px solid var(--line);padding:18px 8px 0;display:flex;gap:12px;align-items:center}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px rgba(63,224,181,.15);flex:none}
+  .dot.off{background:var(--amber);box-shadow:0 0 0 4px rgba(245,165,36,.15)}
+  .side-foot b{display:block;font-size:14px}.side-foot small{color:var(--muted);font-size:12px}
+
+  /* ---------- main ---------- */
+  main{padding:34px 40px 100px;max-width:1400px;width:100%}
+  .crumb{font-size:12px;letter-spacing:.2em;color:var(--muted)}
+  .top{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:flex-start;margin:12px 0 26px}
+  h1{font-size:46px;margin:0;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+  h1 i{color:var(--teal);font-style:normal}
+  .tag{color:var(--muted);margin-top:8px}
+  .pills{display:flex;gap:12px;flex-wrap:wrap}
+  .pill{display:flex;align-items:center;gap:10px;border:1px solid #1f6b58;background:#0c2a26;color:var(--teal);padding:12px 20px;border-radius:12px;font:inherit;font-size:13px;letter-spacing:.12em;font-weight:500;cursor:pointer}
+  .pill.live{border-radius:999px;cursor:default;padding:12px 18px}
+  .pill.btn{font-size:15px;letter-spacing:0;font-weight:600}
+  .pill.btn:hover{background:#0f3730}
+  .banner{display:flex;align-items:center;gap:16px;padding:20px 24px;border-radius:16px;border:1px solid #1d5a4b;background:#0b2823;margin-bottom:34px}
+  .banner .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:#11413a;color:var(--teal);flex:none}
+  .banner b{display:block;font-size:18px}.banner small{color:var(--muted);font-size:14px}
+  .banner .st{margin-left:auto;font-size:12px;letter-spacing:.14em;padding:8px 14px;border-radius:8px;background:#11413a;color:var(--teal)}
+  .banner.warn{border-color:#6b4a12;background:#291d0a}.banner.warn .ic,.banner.warn .st{background:#43300e;color:var(--amber)}
+  .banner.bad{border-color:#7a2b2b;background:#2a1111}.banner.bad .ic,.banner.bad .st{background:#471a1a;color:var(--red)}
+  .sec{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;gap:10px}
+  h2{font-size:22px;margin:0;font-weight:600}
+  .sub{color:var(--muted);font-size:14px;margin-top:4px}
+  .upd{color:var(--muted);font-size:13px}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:28px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 24px}
+  .mc .h{display:flex;justify-content:space-between;color:#b4c4cb;font-size:14px}
+  .mc .h svg{color:var(--teal);width:18px}
+  .mc .v{font-size:44px;font-weight:600;margin:20px 0 4px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .mc .v small{font-size:16px;color:var(--muted);font-weight:400;margin-left:6px}
+  .mc .n{color:var(--muted);font-size:13px}
+  .bar{height:4px;background:#1d2c35;border-radius:9px;margin-top:20px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:9px;transition:width .5s}
+  .row{display:grid;grid-template-columns:1.7fr 1fr;gap:20px;margin-bottom:20px}
+  .legend{display:flex;align-items:center;gap:8px;font-size:13px;color:#b4c4cb}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 6px}
+  .tabs button,select{font:inherit;font-size:13px;color:#b4c4cb;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:6px 14px;cursor:pointer}
+  .tabs button.on{background:var(--teal-d);border-color:#1f6b58;color:var(--teal)}
+  select{border-radius:10px}
+  .cw{position:relative}
+  canvas{width:100%;height:260px;display:block}
+  .tip{position:absolute;pointer-events:none;display:none;background:#e8f1f2;color:#0a1218;font-size:12px;padding:4px 9px;border-radius:7px;white-space:nowrap;transform:translate(-50%,-130%)}
+  .sum{display:flex;align-items:center;gap:16px;padding:16px 0;border-top:1px solid var(--line)}
+  .sum:first-of-type{border-top:0}
+  .sum .ic{width:46px;height:46px;border-radius:12px;background:#12332f;color:var(--teal);display:grid;place-items:center;flex:none}
+  .sum .ic.a{background:#33260d;color:var(--amber)}.sum .ic.b{background:#102a3d;color:var(--blue)}
+  .sum small{color:var(--muted);font-size:13px;display:block}.sum b{font-size:22px;font-weight:600}
+  .live-tag{font-size:11px;letter-spacing:.14em;color:var(--teal);border:1px solid #1f6b58;border-radius:999px;padding:6px 12px}
+  .btnrow{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap}
+  .btn{font:inherit;font-weight:500;border-radius:10px;padding:10px 16px;cursor:pointer;border:1px solid var(--line);background:var(--card2);color:var(--ink)}
+  .btn.red{background:#3a1717;border-color:#7a2b2b;color:#ff9a9a}.btn.grn{background:var(--teal-d);border-color:#1f6b58;color:var(--teal)}
+  ul.ev{list-style:none;margin:0;padding:0}
+  ul.ev li{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--line);align-items:flex-start}
+  ul.ev li:first-child{border-top:0}
+  .k{font-size:11px;letter-spacing:.12em;padding:4px 9px;border-radius:6px;flex:none;margin-top:2px}
+  .k.ALERT{background:#43300e;color:var(--amber)}.k.FAULT{background:#471a1a;color:var(--red)}
+  .k.CLEARED{background:#11413a;color:var(--teal)}.k.RELAY{background:#102a3d;color:var(--blue)}
+  ul.ev small{color:var(--muted);display:block;font-size:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .comp{display:flex;gap:16px}
+  .comp .ic{width:46px;height:46px;border-radius:12px;background:#12332f;color:var(--teal);display:grid;place-items:center;flex:none}
+  .comp b{font-size:17px}.comp small{display:block;color:var(--muted);margin-top:2px}.comp code{color:var(--teal);font-size:12px}
+  .view{display:none}.view.on{display:block}
+
+  /* ---------- chat ---------- */
+  #fab{position:fixed;right:28px;bottom:28px;width:80px;height:80px;border-radius:22px;background:var(--teal);color:#06231c;border:0;cursor:pointer;display:grid;place-items:center;box-shadow:0 12px 40px rgba(63,224,181,.25);z-index:20}
+  #fab svg{width:34px;height:34px}
+  #chat{position:fixed;right:28px;bottom:120px;width:min(390px,calc(100vw - 32px));height:min(540px,70vh);display:none;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;z-index:20}
+  #chat.open{display:flex}
+  .ch{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .ch small{display:block;color:var(--muted);font-size:12px}
+  .ch button{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer}
+  #msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .m{max-width:86%;padding:10px 14px;border-radius:14px;white-space:pre-wrap;font-size:14px}
+  .m.bot{background:var(--card2);align-self:flex-start;border-bottom-left-radius:4px}
+  .m.me{background:var(--teal);color:#06231c;align-self:flex-end;border-bottom-right-radius:4px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
+  .chips button{font:inherit;font-size:12px;color:#b4c4cb;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+  #form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+  #form input{flex:1;min-width:0;font:inherit;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+  #form button{font:inherit;font-weight:600;border:0;border-radius:10px;background:var(--teal);color:#06231c;padding:0 16px;cursor:pointer}
+
+  /* ---------- responsive ---------- */
+  @media(max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}.row,.grid2{grid-template-columns:1fr}}
+  @media(max-width:860px){
+    .app{grid-template-columns:1fr}
+    aside{position:static;height:auto;flex-direction:row;align-items:center;padding:12px;overflow-x:auto;gap:6px}
+    .brand{padding:0 10px 0 0}.brand span,.grp,.side-foot{display:none}
+    nav{display:flex;gap:4px}nav a{margin:0;padding:10px 12px;white-space:nowrap}
+    main{padding:22px 16px 110px}h1{font-size:34px}
+    .cards{grid-template-columns:1fr}
+    #fab{width:64px;height:64px;right:16px;bottom:16px}#chat{right:16px;bottom:92px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand"><div class="logo">⚡</div><div><b>Leakage Detector</b><span>SMART ENERGY SYSTEM</span></div></div>
+    <div class="grp">WORKSPACE</div>
+    <nav id="nav">
+      <a data-v="overview" class="on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Overview</a>
+      <a data-v="analytics"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 5-8 4 5"/></svg>Analytics</a>
+      <a data-v="components"><svg viewBox="0 0 24 24"><path d="M12 3l9 9-9 9-9-9z"/></svg>Components</a>
+      <div class="grp">SYSTEM</div>
+      <a data-v="alerts"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0"/></svg>Alerts<span class="badge" id="badge">0</span></a>
+    </nav>
+    <div class="side-foot"><span class="dot off" id="sdot"></span><div><b id="sname">Waiting…</b><small id="ssub">Local server connection</small></div></div>
+  </aside>
+
+  <main>
+    <!-- ================= OVERVIEW ================= -->
+    <section class="view on" id="v-overview">
+      <div class="crumb">ENERGY INTELLIGENCE / OVERVIEW</div>
+      <div class="top">
+        <div><h1><span id="greet">Hello</span><i>.</i></h1><div class="tag">Monitor your room, understand your usage, stay energy-aware.</div></div>
+        <div class="pills"><div class="pill live"><span class="dot"></span>LIVE MONITORING</div><button class="pill btn" id="sim">+ Simulate reading</button></div>
+      </div>
+
+      <div class="banner" id="banner"><div class="ic" id="bic"></div><div><b id="bt">Waiting for data…</b><small id="bs">Start the ESP32 or press “Simulate reading”.</small></div><span class="st" id="bst">…</span></div>
+
+      <div class="sec"><div><h2>Live parameters</h2><div class="sub">Latest readings received from the monitoring system</div></div><div class="upd" id="upd"></div></div>
+      <div class="cards">
+        <div class="card mc"><div class="h">Current<svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div><div class="v"><span id="cur">–</span><small>A</small></div><div class="n">Load current</div><div class="bar"><i id="curb" style="background:var(--teal)"></i></div></div>
+        <div class="card mc"><div class="h">Voltage<svg viewBox="0 0 24 24"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg></div><div class="v"><span id="vol">–</span><small>V</small></div><div class="n">Supply voltage reading</div><div class="bar"><i id="volb" style="background:var(--blue)"></i></div></div>
+        <div class="card mc"><div class="h">Temperature<svg viewBox="0 0 24 24"><path d="M14 14.8V4a2 2 0 00-4 0v10.8a4 4 0 104 0z"/></svg></div><div class="v"><span id="tmp">–</span><small>°C</small></div><div class="n">Sensor temperature</div><div class="bar"><i id="tmpb" style="background:var(--amber)"></i></div></div>
+        <div class="card mc"><div class="h">Room status<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/></svg></div><div class="v" style="font-size:36px;margin-top:22px" id="occ">–</div><div class="n" id="appl">Appliance: –</div><div class="n" style="margin-top:14px;display:flex;align-items:center;gap:8px;color:#b4c4cb"><span class="dot" id="mdot"></span><span id="mtxt">–</span></div></div>
+      </div>
+
+      <div class="row">
+        <div class="card">
+          <div class="sec" style="margin:0"><div><h2>Electricity activity</h2><div class="sub" id="ctitle">Recent readings</div></div>
+            <div class="legend"><span class="dot"></span><span id="lg">Power (W)</span></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <div class="tabs" id="tabs"><button data-m="power" class="on">Power</button><button data-m="current">Current</button><button data-m="voltage">Voltage</button><button data-m="temp">Temperature</button></div>
+            <select id="range"><option value="15">15 min</option><option value="30" selected>30 min</option><option value="60">1 hour</option><option value="360">6 hours</option><option value="1440">24 hours</option></select>
+          </div>
+          <div class="cw"><canvas id="c1"></canvas><div class="tip" id="t1"></div></div>
+          <div class="sub" style="margin-top:6px"><span style="color:var(--red)">■</span> room empty &amp; appliances ON &nbsp; <span style="color:var(--teal)">■</span> normal</div>
+        </div>
+        <div class="card">
+          <div class="sec" style="margin:0 0 8px"><div><h2>System summary</h2><div class="sub">Prototype activity</div></div><span class="live-tag">LIVE</span></div>
+          <div class="sum"><div class="ic b"><svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 3 5-8 4 5"/></svg></div><div><small>Readings stored</small><b id="s-read">–</b></div></div>
+          <div class="sum"><div class="ic a"><svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg></div><div><small>Warning readings</small><b id="s-warn">–</b></div></div>
+          <div class="sum"><div class="ic"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div><div><small>Energy today</small><b id="s-kwh">–</b></div></div>
+          <div class="sum"><div class="ic a"><svg viewBox="0 0 24 24"><path d="M6 4h12l-2 16H8zM9 9h6"/></svg></div><div><small>Wasted in empty room · cost today</small><b id="s-waste">–</b></div></div>
+          <div class="sum"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v9M6.3 6.3a8 8 0 1011.4 0"/></svg></div><div style="flex:1"><small>Load relay</small><b id="s-rel">–</b>
+            <div class="btnrow"><button class="btn red" id="off">Cut load</button><button class="btn grn" id="on">Restore</button></div></div></div>
+        </div>
+      </div>
+      <div class="card"><div class="sec" style="margin-bottom:6px"><div><h2>Recent events</h2></div></div><ul class="ev" id="ev1"></ul></div>
+    </section>
+
+    <!-- ================= ANALYTICS ================= -->
+    <section class="view" id="v-analytics">
+      <div class="crumb">ENERGY INTELLIGENCE / ANALYTICS</div>
+      <div class="top"><div><h1>Analytics<i>.</i></h1><div class="tag">Every sensor, side by side.</div></div>
+        <div class="pills"><select id="range2"><option value="15">15 min</option><option value="30" selected>30 min</option><option value="60">1 hour</option><option value="360">6 hours</option><option value="1440">24 hours</option></select></div></div>
+      <div class="grid2">
+        <div class="card"><h2>Power (W)</h2><div class="cw"><canvas id="a-power"></canvas><div class="tip"></div></div></div>
+        <div class="card"><h2>Current (A)</h2><div class="cw"><canvas id="a-current"></canvas><div class="tip"></div></div></div>
+        <div class="card"><h2>Voltage (V)</h2><div class="cw"><canvas id="a-voltage"></canvas><div class="tip"></div></div></div>
+        <div class="card"><h2>Temperature (°C)</h2><div class="cw"><canvas id="a-temp"></canvas><div class="tip"></div></div></div>
+      </div>
+    </section>
+
+    <!-- ================= COMPONENTS ================= -->
+    <section class="view" id="v-components">
+      <div class="crumb">ENERGY INTELLIGENCE / COMPONENTS</div>
+      <div class="top"><div><h1>Components<i>.</i></h1><div class="tag">Hardware used in the prototype.</div></div></div>
+      <div class="grid2" id="comps"></div>
+    </section>
+
+    <!-- ================= ALERTS ================= -->
+    <section class="view" id="v-alerts">
+      <div class="crumb">ENERGY INTELLIGENCE / ALERTS</div>
+      <div class="top"><div><h1>Alerts<i>.</i></h1><div class="tag">Reminders, safety faults and remote commands.</div></div></div>
+      <div class="card"><ul class="ev" id="ev2"></ul></div>
+    </section>
+  </main>
+</div>
+
+<button id="fab" aria-label="Open assistant"><svg viewBox="0 0 24 24"><path d="M12 3v6M12 15v6M3 12h6M15 12h6M5.6 5.6l4.2 4.2M14.2 14.2l4.2 4.2M18.4 5.6l-4.2 4.2M9.8 14.2l-4.2 4.2"/></svg></button>
+<section id="chat" aria-label="Assistant">
+  <div class="ch"><div><b>Assistant</b><small id="mode">Ask about your room</small></div><button id="close">✕</button></div>
+  <div id="msgs"></div><div class="chips" id="chips"></div>
+  <form id="form"><input id="q" placeholder="Ask something…" autocomplete="off"><button>Send</button></form>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+const f = (n,d=1) => (n==null||isNaN(n)) ? '–' : Number(n).toFixed(d);
+const post = async (u,b={}) => (await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)})).json();
+const get  = async u => (await fetch(u)).json();
+
+/* ---------- navigation ---------- */
+function show(v){
+  document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on', e.id==='v-'+v));
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on', a.dataset.v===v));
+  location.hash = v; refresh();
+}
+document.querySelectorAll('#nav a').forEach(a=>a.onclick=()=>show(a.dataset.v));
+const h = new Date().getHours();
+$('greet').textContent = h<12 ? 'Good morning' : h<17 ? 'Good afternoon' : 'Good evening';
+
+/* ---------- components page ---------- */
+const COMPS = [
+  ['ESP32 DevKit','Main controller: reads sensors, runs the decision logic, sends data over WiFi.','—','M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3M7 7h10v10H7z'],
+  ['HC-SR501 PIR','Detects human movement to decide if the room is occupied.','GPIO27','M12 3a9 9 0 019 9M12 7a5 5 0 015 5M12 11a1 1 0 011 1'],
+  ['ACS712 current sensor','Measures the current drawn by appliances (through a 10k/20k divider).','GPIO34','M13 2L4 14h7l-1 8 9-12h-7z'],
+  ['ZMPT101B voltage sensor','Measures mains voltage to catch over/under-voltage.','GPIO35','M3 12h4l2-6 4 12 2-6h6'],
+  ['LM35 temperature sensor','Detects overheating of wires and appliances.','GPIO32','M14 14.8V4a2 2 0 00-4 0v10.8a4 4 0 104 0z'],
+  ['Relay module','Cuts the load on a fault or when you press “Cut load”.','GPIO33','M12 3v9M6.3 6.3a8 8 0 1011.4 0'],
+  ['Buzzer + LED','Audible and visual reminder when appliances are left ON.','GPIO25 / 26','M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 004 0'],
+  ['Fuse · MCB · RCCB/RCBO · SPD','Real overload, earth-leakage and surge protection. The ESP32 only monitors.','Mains side','M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z'],
+];
+$('comps').innerHTML = COMPS.map(c=>`<div class="card comp"><div class="ic"><svg viewBox="0 0 24 24"><path d="${c[3]}"/></svg></div><div><b>${c[0]}</b><small>${c[1]}</small><code>${c[2]}</code></div></div>`).join('');
+
+/* ---------- charts ---------- */
+const METRICS = {
+  power:{label:'Power',unit:'W',dec:0,zero:true,color:'#3fe0b5'},
+  current:{label:'Current',unit:'A',dec:2,zero:true,color:'#3fe0b5'},
+  voltage:{label:'Voltage',unit:'V',dec:0,zero:false,color:'#5aa9ff'},
+  temp:{label:'Temperature',unit:'°C',dec:1,zero:false,color:'#f5a524'},
+};
+function makeChart(canvas, tip, getMetric){
+  let rows=[], hover=-1, geo=null;
+  function draw(){
+    const mk=getMetric(), m=METRICS[mk], dpr=devicePixelRatio||1;
+    canvas.width=canvas.clientWidth*dpr; canvas.height=canvas.clientHeight*dpr;
+    const g=canvas.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+    const W=canvas.clientWidth,H=canvas.clientHeight,L=44,B=24,T=10,R=12;
+    g.clearRect(0,0,W,H); g.font='11px Outfit,system-ui';
+    if(rows.length<2){ g.fillStyle='#7d909a'; g.fillText('Not enough data yet — press “Simulate reading” or start the device.',L,H/2); geo=null; return; }
+    const vals=rows.map(r=>r[mk]); let lo=m.zero?0:Math.min(...vals), hi=Math.max(...vals);
+    if(hi-lo<(m.zero?1:2)) hi=lo+(m.zero?1:2);
+    if(m.zero) hi*=1.1; else {const p=(hi-lo)*.2; lo-=p; hi+=p;}
+    const t0=rows[0].ts,t1=rows[rows.length-1].ts;
+    const x=t=>L+(t-t0)/(t1-t0||1)*(W-L-R), y=v=>H-B-(v-lo)/(hi-lo)*(H-B-T);
+    g.lineWidth=1; g.textAlign='right';
+    for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,yy=y(v);g.strokeStyle='#1b2c36';g.beginPath();g.moveTo(L,yy);g.lineTo(W-R,yy);g.stroke();g.fillStyle='#7d909a';g.fillText(v.toFixed(m.dec),L-8,yy+4);}
+    for(let i=0;i<=4;i++){const t=t0+(t1-t0)*i/4;g.textAlign=i==0?'left':i==4?'right':'center';g.fillStyle='#7d909a';g.fillText(new Date(t*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),L+(W-L-R)*i/4,H-6);}
+    // soft area under the line
+    const grad=g.createLinearGradient(0,T,0,H-B); grad.addColorStop(0,'rgba(63,224,181,.18)'); grad.addColorStop(1,'rgba(63,224,181,0)');
+    g.beginPath(); g.moveTo(x(rows[0].ts),H-B); rows.forEach(r=>g.lineTo(x(r.ts),y(r[mk]))); g.lineTo(x(t1),H-B); g.closePath(); g.fillStyle=grad; g.fill();
+    g.lineWidth=2.5; g.lineJoin='round'; g.lineCap='round';
+    for(let i=0;i<rows.length-1;i++){const r=rows[i];g.strokeStyle=(!r.occupied&&r.load_on)?'#ff6b6b':m.color;g.beginPath();g.moveTo(x(r.ts),y(r[mk]));g.lineTo(x(rows[i+1].ts),y(rows[i+1][mk]));g.stroke();}
+    if(rows.length<=60) rows.forEach(r=>{g.fillStyle=(!r.occupied&&r.load_on)?'#ff6b6b':m.color;g.beginPath();g.arc(x(r.ts),y(r[mk]),3,0,7);g.fill();});
+    geo={x,y};
+    if(hover>=0&&hover<rows.length){const r=rows[hover];g.fillStyle='#e8f1f2';g.beginPath();g.arc(x(r.ts),y(r[mk]),5,0,7);g.fill();}
+  }
+  canvas.addEventListener('mousemove',e=>{
+    if(!geo||rows.length<2)return; const px=e.clientX-canvas.getBoundingClientRect().left; let b=0,bd=1e9;
+    rows.forEach((r,i)=>{const d=Math.abs(geo.x(r.ts)-px); if(d<bd){bd=d;b=i;}}); hover=b; draw();
+    const r=rows[b],mk=getMetric(),m=METRICS[mk];
+    tip.style.display='block'; tip.style.left=geo.x(r.ts)+'px'; tip.style.top=geo.y(r[mk])+'px';
+    tip.textContent=r[mk].toFixed(m.dec)+' '+m.unit+' · '+new Date(r.ts*1000).toLocaleTimeString();
+  });
+  canvas.addEventListener('mouseleave',()=>{hover=-1;tip.style.display='none';draw();});
+  return {set(r){rows=r;draw();}, draw};
+}
+let metric='power';
+const main = makeChart($('c1'),$('t1'),()=>metric);
+const small = ['power','current','voltage','temp'].map(k=>{const c=$('a-'+k);return {k,ch:makeChart(c,c.parentElement.querySelector('.tip'),()=>k)};});
+$('tabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;metric=b.dataset.m;
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  $('lg').textContent=METRICS[metric].label+' ('+METRICS[metric].unit+')'; main.draw();};
+$('range').onchange=()=>{$('range2').value=$('range').value;refresh();};
+$('range2').onchange=()=>{$('range').value=$('range2').value;refresh();};
+addEventListener('resize',()=>{main.draw();small.forEach(s=>s.ch.draw());});
+
+/* ---------- data refresh ---------- */
+const evHTML = ev => ev.length ? ev.map(e=>`<li><span class="k ${e.kind}">${e.kind}</span><div>${e.detail}<small>${new Date(e.ts*1000).toLocaleString()}</small></div></li>`).join('') : '<li><div class="sub">No events yet</div></li>';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+async function refresh(){
+  let d;
+  try{ d = await get('/api/latest'); }catch(e){ $('sname').textContent='Server unreachable'; $('sdot').className='dot off'; return; }
+  const r=d.latest, t=d.today, c=d.counts||{};
+  if(!r){ $('sname').textContent='No data yet'; $('sdot').className='dot off'; }
+  else {
+    $('sdot').className='dot'+(r.online?'':' off'); $('sname').textContent=r.online?'System online':'Device offline';
+    $('ssub').textContent=r.online?(r.device_id+' · connected'):('last seen '+r.age_s+'s ago');
+    $('cur').textContent=f(r.current,2); $('vol').textContent=f(r.voltage,1); $('tmp').textContent=f(r.temp,1);
+    $('curb').style.width=clamp(r.current/10*100,3,100)+'%'; $('volb').style.width=clamp((r.voltage-100)/160*100,3,100)+'%'; $('tmpb').style.width=clamp(r.temp/80*100,3,100)+'%';
+    $('occ').textContent=r.occupied?'Occupied':'Empty'; $('appl').textContent='Appliance: '+(r.load_on?'ON':'OFF');
+    $('mdot').className='dot'+(r.occupied?'':' off'); $('mtxt').textContent=r.occupied?'Movement detected':'No movement';
+    $('upd').textContent='Updated '+new Date(r.ts*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const b=$('banner'), chk='<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>', warn='<svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>';
+    if(r.fault){ b.className='banner bad'; $('bic').innerHTML=warn; $('bt').textContent='Safety fault: '+r.fault.replace(/_/g,' ').toLowerCase(); $('bs').textContent='The relay may have cut the load. Check the wiring and appliances.'; $('bst').textContent='FAULT'; }
+    else if(r.alert){ b.className='banner warn'; $('bic').innerHTML=warn; $('bt').textContent='Room empty, appliances still ON'; $('bs').textContent='The buzzer is reminding you to switch them off.'; $('bst').textContent='WARNING'; }
+    else { b.className='banner'; $('bic').innerHTML=chk; $('bt').textContent='Everything looks normal'; $('bs').textContent='No active warning in the latest sensor reading.'; $('bst').textContent='NORMAL'; }
+    $('s-rel').textContent=r.relay?'Connected':'Cut off';
+  }
+  $('s-read').textContent=c.readings??'–'; $('s-warn').textContent=c.warnings??'–';
+  $('s-kwh').textContent=f(t.kwh,3)+' kWh · Rs '+f(t.cost,2);
+  $('s-waste').textContent=f(t.wasted_kwh,3)+' kWh · Rs '+f(t.wasted_cost,2);
+  try{
+    const ev=await get('/api/events'); $('ev1').innerHTML=evHTML(ev.slice(0,5)); $('ev2').innerHTML=evHTML(ev);
+    $('badge').textContent=ev.filter(e=>e.kind==='ALERT'||e.kind==='FAULT').length;
+  }catch(e){}
+  try{
+    const rows=await get('/api/history?minutes='+$('range').value);
+    $('ctitle').textContent='Recent readings · last '+$('range').selectedOptions[0].text;
+    main.set(rows); if(document.getElementById('v-analytics').classList.contains('on')) small.forEach(s=>s.ch.set(rows));
+  }catch(e){}
+}
+$('sim').onclick=async()=>{ await post('/api/simulate'); refresh(); };
+$('off').onclick=async()=>{ if(confirm('Cut power to the connected load?')){ await post('/api/relay',{on:false}); setTimeout(refresh,500);} };
+$('on').onclick=async()=>{ await post('/api/relay',{on:true}); setTimeout(refresh,500); };
+
+/* ---------- chat ---------- */
+const msgs=$('msgs');
+function add(t,w){const d=document.createElement('div');d.className='m '+w;d.textContent=t;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;return d;}
+async function ask(text){ if(!text.trim())return; add(text,'me'); const w=add('…','bot');
+  try{ const r=await post('/api/chat',{message:text}); w.textContent=r.reply; $('mode').textContent=r.mode==='llm'?'AI mode':'Rule-based mode'; if(r.action) setTimeout(refresh,800);}
+  catch(e){ w.textContent='Could not reach the server.'; } }
+$('form').onsubmit=e=>{e.preventDefault();const v=$('q').value;$('q').value='';ask(v);};
+$('fab').onclick=()=>{$('chat').classList.toggle('open'); if(!msgs.children.length) add('Hi! I can tell you the room status, energy use, alerts, or switch the load off. What would you like to know?','bot');};
+$('close').onclick=()=>$('chat').classList.remove('open');
+['Status','Energy today','Any alerts?','How much did I waste?','Tips to save power','Turn off'].forEach(t=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.onclick=()=>ask(t);$('chips').appendChild(b);});
+
+const start=(location.hash||'#overview').slice(1); show(['overview','analytics','components','alerts'].includes(start)?start:'overview');
+setInterval(refresh,5000);
+</script>
+</body>
+</html>
