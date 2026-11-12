@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <title>VoltGuard | Smart Electricity Monitoring</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">V</div><div><b>VOLTGUARD</b><small>SMART ENERGY SYSTEM</small></div></div>
+    <div class="side-label">WORKSPACE</div>
+    <a class="nav active" href="#overview">◫ <span>Overview</span></a>
+    <a class="nav" href="#readings">⌁ <span>Live readings</span></a>
+    <a class="nav" href="#alerts">⚑ <span>Alerts & events</span></a>
+    <a class="nav" href="#assistant">✳ <span>AI assistant</span></a>
+    <div class="side-bottom"><div class="connection-dot"></div><div><b>System status</b><small id="api-status">Checking API…</small></div></div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><div><div class="eyebrow">IOT ENERGY MANAGEMENT</div><h1>Overview</h1></div><div class="top-actions"><span class="live-pill"><i></i> LIVE MONITOR</span><button class="icon-btn" id="refresh">↻</button><div class="avatar">VG</div></div></header>
+    <section class="welcome"><div><p class="eyebrow">SMART ELECTRICITY LEAKAGE DETECTION</p><h2>Monitor smarter. <span>Stay safer.</span></h2><p>Track occupancy, electrical readings and unusual activity from one dashboard.</p></div><div class="welcome-icon">ϟ</div></section>
+    <section class="metrics" id="overview">
+      <article class="metric"><div class="metric-top"><span>Current</span><span class="metric-icon">↯</span></div><strong id="current">-- <small>A</small></strong><p>Measured load current</p></article>
+      <article class="metric"><div class="metric-top"><span>Voltage</span><span class="metric-icon">⌁</span></div><strong id="voltage">-- <small>V</small></strong><p>Supply voltage reading</p></article>
+      <article class="metric"><div class="metric-top"><span>Temperature</span><span class="metric-icon">♨</span></div><strong id="temperature">-- <small>°C</small></strong><p>Sensor temperature</p></article>
+      <article class="metric"><div class="metric-top"><span>Power</span><span class="metric-icon">ϟ</span></div><strong id="power">-- <small>W</small></strong><p>Estimated active power</p></article>
+    </section>
+    <section class="content-grid" id="readings">
+      <article class="panel chart-panel"><div class="panel-head"><div><h3>Electrical activity</h3><p>Latest saved sensor readings</p></div><span class="subtle-tag">HISTORY</span></div><div class="chart-wrap"><canvas id="activityChart"></canvas><div class="empty-chart" id="chart-empty">No saved readings yet. Connect your ESP32 or use the simulator.</div></div></article>
+      <article class="panel room-panel"><div class="panel-head"><div><h3>Room status</h3><p>Occupancy & appliance state</p></div><span class="status-chip" id="room-chip">WAITING</span></div><div class="room-visual"><div class="room-circle">⌂</div><div><b id="occupancy">Unknown</b><small>Occupancy detection</small></div></div><div class="state-row"><span>Appliance status</span><b id="appliance">Unknown</b></div><div class="state-row"><span>Buzzer alert</span><b id="buzzer">Unknown</b></div><div class="state-row"><span>LED indicator</span><b id="led">Unknown</b></div></article>
+    </section>
+    <section class="content-grid lower-grid" id="alerts">
+      <article class="panel"><div class="panel-head"><div><h3>Recent events</h3><p>System warnings and notifications</p></div><span class="subtle-tag">LATEST 30</span></div><div id="events-list" class="events-list"><div class="empty-state">No events recorded yet.</div></div></article>
+      <article class="panel assistant-card" id="assistant"><div class="panel-head"><div><h3>VoltGuard AI</h3><p>Ask about your project and readings</p></div><span class="ai-tag">SARVAM AI</span></div><div class="chat-messages" id="chat-messages"><div class="message bot">Hello! I'm VoltGuard Assistant. Ask me about the sensors, alerts, dashboard or how this project works.</div></div><form id="chat-form" class="chat-form"><input id="chat-input" maxlength="1000" placeholder="Ask VoltGuard anything…" autocomplete="off"><button type="submit">Send ↗</button></form><small class="chat-note">AI answers are informational and do not replace electrical inspection.</small></article>
+    </section>
+    <footer>VOLTGUARD · EDUCATIONAL IOT PROTOTYPE <span>Sensor thresholds require calibration and testing.</span></footer>
+  </main>
+</div>
+<script src="/app.js"></script>
+</body></html>
