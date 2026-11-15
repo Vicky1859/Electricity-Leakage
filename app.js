@@ -220,15 +220,32 @@ async function initializeAuth() {
     const config=await response.json();
     if(!response.ok || !config.supabase_url || !config.supabase_anon_key) throw new Error(config.error || "Authentication is not configured yet. Add SUPABASE_ANON_KEY in Vercel Environment Variables.");
     supabaseClient=window.supabase.createClient(config.supabase_url,config.supabase_anon_key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-    supabaseClient.auth.onAuthStateChange((event,session)=>{
-      if(event==="SIGNED_OUT") showSignedOut();
-      else if(event==="PASSWORD_RECOVERY") showAuthView("update-password");
-      else if(session && (event==="SIGNED_IN" || event==="TOKEN_REFRESHED" || event==="USER_UPDATED")) showDashboard(session);
-    });
-    const {data,error}=await supabaseClient.auth.getSession();
-    if(error) throw error;
-    if(data.session) showDashboard(data.session);
-    else showSignedOut();
+    let recoveryInProgress = false;
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (event === "SIGNED_OUT") {
+    showSignedOut();
+  } else if (event === "PASSWORD_RECOVERY") {
+    recoveryInProgress = true;
+    showAuthView("update-password");
+  } else if (
+    session &&
+    (event === "SIGNED_IN" ||
+     event === "TOKEN_REFRESHED" ||
+     event === "USER_UPDATED")
+  ) {
+    if (!recoveryInProgress) showDashboard(session);
+  }
+});
+
+const { data, error } = await supabaseClient.auth.getSession();
+if (error) throw error;
+
+if (data.session && !recoveryInProgress) {
+  showDashboard(data.session);
+} else if (!recoveryInProgress) {
+  showSignedOut();
+}
   } catch(error) {
     showAuthView("login");
     setAuthMessage(error.message || "Could not initialize authentication.");
