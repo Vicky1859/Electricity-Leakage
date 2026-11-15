@@ -6,6 +6,8 @@ A GitHub-ready starter project for **Vercel + Supabase + Sarvam AI**.
 
 - Dashboard for current, voltage, temperature, power, occupancy and appliance status.
 - Recent electrical activity chart and event list.
+- Email/password sign-in, account registration, password reset and logout using Supabase Auth.
+- Authenticated dashboard APIs for readings, events and chatbot requests.
 - Sarvam AI chatbot connected from a server-side Python function.
 - Supabase PostgreSQL storage for readings and events.
 - ESP32-friendly `POST /api/readings` endpoint.
@@ -26,8 +28,9 @@ Never commit `.env` or a real API key. `.env.example` contains placeholders only
 1. Create a Supabase project.
 2. Open SQL Editor.
 3. Paste and run `supabase/schema.sql`.
-4. In Project Settings → API, copy the Project URL and the `service_role` secret.
-5. Keep the service-role key private. Do not put it in browser JavaScript.
+4. In Project Settings → API, copy the Project URL, the `service_role` secret, and the publishable key (or legacy `anon` key).
+5. Keep the service-role key private. Only the publishable/anon key is sent to the browser.
+6. In Authentication → URL Configuration, set your deployed Vercel domain as the Site URL and add it to the Redirect URLs list.
 
 ## 3. Deploy on Vercel
 
@@ -38,16 +41,18 @@ Never commit `.env` or a real API key. `.env.example` contains placeholders only
 5. Add these Environment Variables in Project Settings → Environment Variables:
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_ANON_KEY` (Supabase publishable key or legacy anon key)
    - `SARVAM_API_KEY`
    - `SARVAM_MODEL` = `sarvam-105b`
    - `DEVICE_API_KEY` = a long random secret (optional but recommended for ESP32 writes)
 6. Redeploy after adding variables.
 
-The Python API function is `api/index.py`; the frontend files (`index.html`, `style.css`, `app.js`) are served from the repository root.
+The Python API function is `api/index.py`; the frontend files (`index.html`, `style.css`, `app.js`) are served from the repository root. Dashboard readings, events and chatbot API requests require a valid Supabase Auth session. The hardware `POST /api/readings` endpoint remains separate and can be protected with `DEVICE_API_KEY`.
 
 ## 4. Test endpoints
 
 - `GET /api/health` — checks whether server-side configuration exists.
+- `GET /api/config` — returns only the Supabase URL and public publishable/anon key for browser authentication.
 - `GET /api/readings` — latest 30 readings.
 - `GET /api/events` — latest 30 events.
 - `POST /api/chat` — Sarvam chatbot.

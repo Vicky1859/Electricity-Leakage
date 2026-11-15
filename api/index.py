@@ -7,6 +7,7 @@ import requests
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
 SARVAM_MODEL = os.getenv("SARVAM_MODEL", "sarvam-105b")
 DEVICE_API_KEY = os.getenv("DEVICE_API_KEY", "")
@@ -22,7 +23,7 @@ def json_response(handler, status, payload):
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Cache-Control", "no-store")
     handler.send_header("Access-Control-Allow-Origin", "*")
-    handler.send_header("Access-Control-Allow-Headers", "Content-Type, X-Device-Key")
+    handler.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Device-Key")
     handler.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
@@ -48,6 +49,32 @@ def supabase_headers():
 
 def db_ready():
     return bool(SUPABASE_URL and SUPABASE_KEY)
+
+def verify_user_token(handler):
+    """Validate a Supabase Auth access token before serving private dashboard APIs."""
+    if not (SUPABASE_URL and SUPABASE_ANON_KEY):
+        return False
+    auth_header = handler.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return False
+    token = auth_header[7:].strip()
+    if not token:
+        return False
+    try:
+        response = requests.get(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={"apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {token}"},
+            timeout=10
+        )
+        return response.ok
+    except requests.RequestException:
+        return False
+
+def require_user(handler):
+    if not verify_user_token(handler):
+        json_response(handler, 401, {"error": "Please sign in to access this resource."})
+        return False
+    return True
 
 def get_latest_readings(limit=30):
     if not db_ready():
@@ -109,7 +136,15 @@ class handler(BaseHTTPRequestHandler):
                 "sarvam_configured": bool(SARVAM_API_KEY)
             })
             return
+        if path == "/api/config":
+            if not (SUPABASE_URL and SUPABASE_ANON_KEY):
+                json_response(self, 503, {"error": "Authentication is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY in Vercel."})
+                return
+            json_response(self, 200, {"supabase_url": SUPABASE_URL, "supabase_anon_key": SUPABASE_ANON_KEY})
+            return
         if path == "/api/readings":
+            if not require_user(self):
+                return
             if not db_ready():
                 json_response(self, 200, {"configured": False, "readings": [], "message": "Add Supabase environment variables to enable saved history."})
                 return
@@ -120,6 +155,8 @@ class handler(BaseHTTPRequestHandler):
                 json_response(self, 502, {"error": str(e)})
             return
         if path == "/api/events":
+            if not require_user(self):
+                return
             if not db_ready():
                 json_response(self, 200, {"configured": False, "events": []})
                 return
@@ -171,6 +208,8 @@ class handler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/chat":
+            if not require_user(self):
+                return
             if not SARVAM_API_KEY:
                 json_response(self, 503, {"error": "Chatbot is not configured yet. Add SARVAM_API_KEY in Vercel Environment Variables."})
                 return

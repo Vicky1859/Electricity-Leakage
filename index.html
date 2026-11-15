@@ -6,11 +6,44 @@
   <title>VoltGuard | Smart Electricity Monitoring</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>
+    try { document.documentElement.dataset.theme = localStorage.getItem("voltguard-theme") || "dark"; } catch (_) { document.documentElement.dataset.theme = "dark"; }
+  </script>
   <link rel="stylesheet" href="/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-<div class="app-shell">
+<section class="auth-screen" id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-brand"><div class="auth-brand-identity"><div class="brand-mark">V</div><div><b>VOLTGUARD</b><small>SMART ENERGY SYSTEM</small></div></div><button class="theme-toggle" id="auth-theme-toggle" type="button" aria-label="Switch to light mode" title="Switch theme">☀</button></div>
+    <div class="auth-heading"><p class="eyebrow">SECURE ACCESS</p><h1 id="auth-title">Welcome back</h1><p id="auth-subtitle">Sign in to continue to your energy dashboard.</p></div>
+    <form id="login-form" class="auth-form">
+      <label for="login-email">Email address</label><input id="login-email" type="email" autocomplete="email" placeholder="you@example.com" required>
+      <label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" placeholder="Enter your password" required minlength="6">
+      <button class="auth-submit" type="submit" id="login-submit">Sign in</button>
+    </form>
+    <form id="signup-form" class="auth-form" hidden>
+      <label for="signup-name">Full name</label><input id="signup-name" type="text" autocomplete="name" placeholder="Your name" maxlength="80" required>
+      <label for="signup-email">Email address</label><input id="signup-email" type="email" autocomplete="email" placeholder="you@example.com" required>
+      <label for="signup-password">Create password</label><input id="signup-password" type="password" autocomplete="new-password" placeholder="At least 6 characters" required minlength="6">
+      <button class="auth-submit" type="submit" id="signup-submit">Create account</button>
+    </form>
+    <form id="reset-form" class="auth-form" hidden>
+      <label for="reset-email">Email address</label><input id="reset-email" type="email" autocomplete="email" placeholder="you@example.com" required>
+      <button class="auth-submit" type="submit">Send password reset link</button>
+    </form>
+    <form id="update-password-form" class="auth-form" hidden>
+      <label for="new-password">New password</label><input id="new-password" type="password" autocomplete="new-password" placeholder="At least 6 characters" required minlength="6">
+      <button class="auth-submit" type="submit">Update password</button>
+    </form>
+    <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
+    <div class="auth-links" id="auth-login-links"><button type="button" id="show-signup">Create an account</button><button type="button" id="show-reset">Forgot password?</button></div>
+    <div class="auth-links" id="auth-signup-links" hidden><span>Already registered?</span><button type="button" id="show-login-from-signup">Sign in</button></div>
+    <div class="auth-links" id="auth-reset-links" hidden><button type="button" id="show-login-from-reset">Back to sign in</button></div>
+    <p class="auth-footnote">VoltGuard · Educational IoT monitoring prototype</p>
+  </div>
+</section>
+<div class="app-shell" id="app-shell" hidden>
   <aside class="sidebar">
     <div class="brand"><div class="brand-mark">V</div><div><b>VOLTGUARD</b><small>SMART ENERGY SYSTEM</small></div></div>
     <div class="side-label">WORKSPACE</div>
@@ -21,7 +54,7 @@
     <div class="side-bottom"><div class="connection-dot"></div><div><b>System status</b><small id="api-status">Checking API…</small></div></div>
   </aside>
   <main class="main">
-    <header class="topbar"><div><div class="eyebrow">IOT ENERGY MANAGEMENT</div><h1>Overview</h1></div><div class="top-actions"><span class="live-pill"><i></i> LIVE MONITOR</span><button class="icon-btn" id="refresh">↻</button><div class="avatar">VG</div></div></header>
+    <header class="topbar"><div><div class="eyebrow">IOT ENERGY MANAGEMENT</div><h1>Overview</h1></div><div class="top-actions"><span class="live-pill"><i></i> LIVE MONITOR</span><button class="icon-btn" id="refresh" aria-label="Refresh readings" title="Refresh readings">↻</button><button class="theme-toggle" id="dashboard-theme-toggle" type="button" aria-label="Switch to light mode" title="Switch theme">☀</button><button class="logout-btn" id="logout" type="button">Log out</button><div class="avatar" id="user-avatar">VG</div></div></header>
     <section class="welcome"><div><p class="eyebrow">SMART ELECTRICITY LEAKAGE DETECTION</p><h2>Monitor smarter. <span>Stay safer.</span></h2><p>Track occupancy, electrical readings and unusual activity from one dashboard.</p></div><div class="welcome-icon">ϟ</div></section>
     <section class="metrics" id="overview">
       <article class="metric"><div class="metric-top"><span>Current</span><span class="metric-icon">↯</span></div><strong id="current">-- <small>A</small></strong><p>Measured load current</p></article>
@@ -40,5 +73,6 @@
     <footer>VOLTGUARD · EDUCATIONAL IOT PROTOTYPE <span>Sensor thresholds require calibration and testing.</span></footer>
   </main>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/app.js"></script>
 </body></html>
