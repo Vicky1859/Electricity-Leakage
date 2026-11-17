@@ -30,17 +30,31 @@ function setAuthMessage(message, success=false) {
   el.classList.toggle("success", Boolean(success));
 }
 function showAuthView(view="login") {
+  $("landing-page").hidden = true;
   $("auth-screen").hidden = false;
   $("app-shell").hidden = true;
+
   $("login-form").hidden = view !== "login";
   $("signup-form").hidden = view !== "signup";
   $("reset-form").hidden = view !== "reset";
   $("update-password-form").hidden = view !== "update-password";
+
   $("auth-login-links").hidden = view !== "login";
   $("auth-signup-links").hidden = view !== "signup";
   $("auth-reset-links").hidden = !["reset", "update-password"].includes(view);
-  $("auth-title").textContent = view === "signup" ? "Create your account" : view === "reset" ? "Reset password" : view === "update-password" ? "Choose a new password" : "Welcome back";
-  $("auth-subtitle").textContent = view === "signup" ? "Register to access your VoltGuard dashboard." : view === "reset" ? "We'll email you a secure password reset link." : view === "update-password" ? "Set a new password for your VoltGuard account." : "Sign in to continue to your energy dashboard.";
+
+  $("auth-title").textContent =
+    view === "signup" ? "Create your account" :
+    view === "reset" ? "Reset password" :
+    view === "update-password" ? "Choose a new password" :
+    "Welcome back";
+
+  $("auth-subtitle").textContent =
+    view === "signup" ? "Register to access your VoltGuard dashboard." :
+    view === "reset" ? "We'll email you a secure password reset link." :
+    view === "update-password" ? "Set a new password for your VoltGuard account." :
+    "Sign in to continue to your energy dashboard.";
+
   setAuthMessage("");
 }
 function showDashboard(session) {
