@@ -237,7 +237,6 @@ $("chat-form").addEventListener("submit", async (e)=>{
 });
 
 async function initializeAuth() {
-  showAuthView("login");
   try {
     if (!window.supabase?.createClient) throw new Error("Supabase client library did not load. Refresh the page and try again.");
     const response=await fetch("/api/config",{cache:"no-store"});
