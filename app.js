@@ -60,6 +60,7 @@ function showAuthView(view="login") {
 function showDashboard(session) {
   currentSession = session;
   dashboardVisible = true;
+  $("landing-page").hidden = true;
   $("auth-screen").hidden = true;
   $("app-shell").hidden = false;
   const name = session.user.user_metadata?.full_name || session.user.email || "VoltGuard User";
