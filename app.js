@@ -72,10 +72,13 @@ function showDashboard(session) {
 function showSignedOut() {
   currentSession = null;
   dashboardVisible = false;
+
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = null;
+
   $("app-shell").hidden = true;
-  showAuthView("login");
+  $("auth-screen").hidden = true;
+  $("landing-page").hidden = false;
 }
 async function api(path, options={}) {
   const {data:{session}} = await supabaseClient.auth.getSession();
