@@ -155,6 +155,12 @@ function setBusy(button, busy, busyText="Please wait…") {
 }
 
 $("auth-theme-toggle").addEventListener("click", toggleTheme);
+$("landing-login").addEventListener("click", () => showAuthView("login"));
+$("hero-login").addEventListener("click", () => showAuthView("login"));
+
+$("explore-project").addEventListener("click", () => {
+  $("features").scrollIntoView({ behavior: "smooth" });
+});
 $("dashboard-theme-toggle").addEventListener("click", toggleTheme);
 applyTheme(document.documentElement.dataset.theme || "dark");
 
