@@ -93,3 +93,10 @@ Send the reading to `POST /api/readings` with `Content-Type: application/json` a
 - Never connect or modify live mains wiring as a student software task. Any mains-side assembly, measurement or switching must be designed and checked by a qualified electrician. A relay is not a substitute for fuse, MCB, RCCB/RCBO or surge protection.
 - The dashboard starts with empty readings; it does not fabricate live sensor data. It will show values after your ESP32 or a simulator posts readings.
 - The `commands` table is prepared for future relay-command workflow, but this starter does not issue physical relay commands.
+
+
+## Dashboard enhancements
+
+The dashboard includes a device heartbeat indicator (online when a reading was received within 90 seconds), a device overview, 24-hour/7-day/30-day reading filters, an estimated recorded-energy summary, alert filters, a dashboard-only floating VoltGuard AI launcher, theme and optional browser-notification settings, and a printable report that can be saved as PDF from the browser print dialog.
+
+Analytics and reports use readings and events already stored in Supabase. Energy is an estimate calculated from adjacent power samples, with gaps capped at one hour; it is not a utility-bill meter. The API requests up to 500 recent readings for the dashboard. A device is only shown as online when fresh telemetry is received.

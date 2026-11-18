@@ -5,6 +5,9 @@ let currentSession = null;
 let refreshTimer = null;
 let dashboardVisible = false;
 let latestChartRows = [];
+let latestEventRows = [];
+let lastAlertIds = new Set();
+let browserAlertsEnabled = false;
 const fmt = (v, digits=2) => v === null || v === undefined ? "--" : Number(v).toFixed(digits);
 
 function applyTheme(theme) {
@@ -102,10 +105,30 @@ function addMessage(text, who) {
 }
 function drawChart(rows) {
   latestChartRows = Array.isArray(rows) ? rows : [];
-  const sorted = [...latestChartRows].reverse();
+  const days = Number($("analytics-range")?.value || 7);
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  const filtered = latestChartRows.filter(r => {
+    const t = new Date(r.created_at || 0).getTime();
+    return Number.isFinite(t) && t >= cutoff;
+  });
+  const sorted = [...filtered].reverse();
   $("chart-empty").style.display = sorted.length ? "none" : "grid";
-  if (!window.Chart || !sorted.length) return;
-  const labels = sorted.map(r => new Date(r.created_at || Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}));
+  $("analytics-count").textContent = `${sorted.length} reading${sorted.length === 1 ? "" : "s"} in selected period`;
+  // Estimate energy by integrating adjacent power samples. Gaps over one hour are capped
+  // so missing telemetry is never treated as continuous consumption.
+  let wattHours = 0;
+  for (let i = 1; i < sorted.length; i++) {
+    const previous = sorted[i - 1], current = sorted[i];
+    const hours = Math.min(1, Math.max(0, (new Date(current.created_at) - new Date(previous.created_at)) / 3600000));
+    const p1 = Number(previous.power_w), p2 = Number(current.power_w);
+    if (Number.isFinite(p1) && Number.isFinite(p2)) wattHours += ((p1 + p2) / 2) * hours;
+  }
+  $("energy-total").textContent = sorted.length > 1 ? `${(wattHours / 1000).toFixed(3)} kWh` : "-- kWh";
+  if (!window.Chart || !sorted.length) { if (chart) { chart.destroy(); chart = null; } return; }
+  const labels = sorted.map(r => {
+    const date = new Date(r.created_at || Date.now());
+    return days === 1 ? date.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) : date.toLocaleDateString([], {month:"short",day:"numeric"});
+  });
   if (chart) chart.destroy();
   const themeStyles = getComputedStyle(document.documentElement);
   const chartLabel = themeStyles.getPropertyValue("--chart-label").trim() || "#9bb0c4";
@@ -116,7 +139,7 @@ function drawChart(rows) {
       {label:"Current (A)",data:sorted.map(r=>r.current_a),borderColor:"#42d6c4",backgroundColor:"rgba(66,214,196,.08)",tension:.35,yAxisID:"y",pointRadius:2},
       {label:"Temperature (°C)",data:sorted.map(r=>r.temperature_c),borderColor:"#f6bd60",tension:.35,yAxisID:"y1",pointRadius:2}
     ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:chartLabel,boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{color:chartTick,maxTicksLimit:6},grid:{color:document.documentElement.dataset.theme === "light" ? "rgba(80,110,140,.14)" : "rgba(130,160,190,.08)"}},y:{ticks:{color:chartTick},grid:{color:document.documentElement.dataset.theme === "light" ? "rgba(80,110,140,.14)" : "rgba(130,160,190,.08)"}},y1:{position:"right",ticks:{color:chartTick},grid:{drawOnChartArea:false}}}}
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{labels:{color:chartLabel,boxWidth:10,font:{size:10}}}},scales:{x:{ticks:{color:chartTick,maxTicksLimit:7},grid:{color:document.documentElement.dataset.theme === "light" ? "rgba(80,110,140,.14)" : "rgba(130,160,190,.08)"}},y:{ticks:{color:chartTick},grid:{color:document.documentElement.dataset.theme === "light" ? "rgba(80,110,140,.14)" : "rgba(130,160,190,.08)"}},y1:{position:"right",ticks:{color:chartTick},grid:{drawOnChartArea:false}}}}
   });
 }
 function setLatest(r) {
@@ -138,14 +161,66 @@ async function refresh() {
     $("api-status").textContent = health.database_configured ? "API + database connected" : "API online · database setup pending";
     document.querySelector(".connection-dot").style.background = health.database_configured ? "var(--cyan)" : "var(--amber)";
     const rows = readings.readings || [];
-    if (rows.length) setLatest(rows[0]);
+    const latest = rows[0];
+    const livePill = $("sensor-live-pill"), liveLabel = $("sensor-live-label"), deviceState = $("device-state");
+    const lastTime = latest?.created_at ? new Date(latest.created_at) : null;
+    const isOnline = Boolean(lastTime && Number.isFinite(lastTime.getTime()) && Date.now() - lastTime.getTime() <= 90000);
+    livePill.classList.toggle("online", isOnline); livePill.classList.toggle("offline", !isOnline);
+    liveLabel.textContent = isOnline ? "DEVICE ONLINE" : (latest ? "DEVICE STALE" : "DEVICE OFFLINE");
+    deviceState.textContent = isOnline ? "ONLINE" : (latest ? "STALE" : "OFFLINE");
+    deviceState.classList.toggle("online", isOnline); deviceState.classList.toggle("offline", !isOnline);
+    $("device-id").textContent = `Device ID: ${latest?.device_id || "waiting for data"}`;
+    $("last-update").textContent = lastTime ? lastTime.toLocaleString() : "No readings received";
+    $("records-count").textContent = rows.length.toLocaleString();
+    $("device-footnote").textContent = isOnline ? "Recent telemetry is arriving from the device." : "No recent telemetry. Check the ESP32 Wi-Fi connection and device upload service.";
+    if (latest) {
+      setLatest(latest);
+      $("insight-current").textContent = `${fmt(latest.current_a)} A`;
+      $("insight-voltage").textContent = `${fmt(latest.voltage_v,1)} V`;
+      $("insight-temperature").textContent = `${fmt(latest.temperature_c,1)} °C`;
+    }
     drawChart(rows);
-    const eventRows = events.events || [];
-    $("events-list").innerHTML = eventRows.length ? eventRows.map(e=>`<div class="event"><span class="event-mark"></span><div><b>${escapeHtml(e.event_type || "EVENT")}</b><small>${escapeHtml(e.message || "")} · ${e.created_at ? new Date(e.created_at).toLocaleString() : ""}</small></div></div>`).join("") : '<div class="empty-state">No events recorded yet. Events will appear when readings trigger prototype rules.</div>';
+    latestEventRows = events.events || [];
+    renderEvents();
+    const unresolved = latestEventRows.filter(e => !e.resolved);
+    $("insight-alerts").textContent = unresolved.length;
+    if (browserAlertsEnabled && unresolved.length) {
+      const fresh = unresolved.filter(e => !lastAlertIds.has(String(e.id)));
+      if (fresh.length && Notification.permission === "granted") new Notification("VoltGuard: new alert", {body:fresh[0].message || fresh[0].event_type || "A new device alert was recorded."});
+    }
+    lastAlertIds = new Set(latestEventRows.map(e => String(e.id)));
   } catch(e) {
     $("api-status").textContent = e.message.includes("401") ? "Please sign in again" : "API connection issue";
+    $("sensor-live-label").textContent = "STATUS UNKNOWN";
+    $("sensor-live-pill").classList.remove("online"); $("sensor-live-pill").classList.add("offline");
     console.error(e);
   }
+}
+function renderEvents() {
+  const filter = $("alert-filter")?.value || "all";
+  const filtered = latestEventRows.filter(e => filter === "all" || (filter === "open" ? !e.resolved : Boolean(e.resolved)));
+  $("events-list").innerHTML = filtered.length ? filtered.map(e=>`<div class="event"><span class="event-mark ${escapeHtml(e.severity || "warning")}"></span><div class="event-copy"><b>${escapeHtml(e.event_type || "EVENT")} <em class="event-state ${e.resolved ? "resolved" : "unresolved"}">${e.resolved ? "RESOLVED" : "OPEN"}</em></b><small>${escapeHtml(e.message || "")} · ${e.created_at ? new Date(e.created_at).toLocaleString() : ""}</small></div></div>`).join("") : '<div class="empty-state">No alerts match this filter.</div>';
+}
+function openChat() {
+  $("assistant").classList.add("chat-open");
+  $("chat-launcher").setAttribute("aria-expanded", "true");
+  setTimeout(() => $("chat-input")?.focus(), 120);
+}
+function closeChat() {
+  $("assistant").classList.remove("chat-open");
+  $("chat-launcher").setAttribute("aria-expanded", "false");
+}
+function downloadReport() {
+  const rows = latestChartRows || [];
+  const events = latestEventRows || [];
+  const latest = rows[0] || {};
+  const generated = new Date().toLocaleString();
+  const reportWindow = window.open("", "_blank", "width=900,height=700");
+  if (!reportWindow) { alert("Please allow pop-ups to create your report."); return; }
+  const readingRows = rows.slice(0,100).map(r=>`<tr><td>${escapeHtml(new Date(r.created_at).toLocaleString())}</td><td>${fmt(r.current_a)}</td><td>${fmt(r.voltage_v,1)}</td><td>${fmt(r.temperature_c,1)}</td><td>${fmt(r.power_w,1)}</td></tr>`).join("");
+  const eventRows = events.slice(0,50).map(e=>`<tr><td>${escapeHtml(e.event_type || "EVENT")}</td><td>${escapeHtml(e.message || "")}</td><td>${e.resolved ? "Resolved" : "Open"}</td><td>${escapeHtml(e.created_at ? new Date(e.created_at).toLocaleString() : "")}</td></tr>`).join("");
+  reportWindow.document.write(`<!doctype html><html><head><title>VoltGuard Report</title><style>body{font:14px Arial,sans-serif;color:#17283b;padding:32px}h1{color:#087f79}p{color:#52697e}.summary{display:flex;gap:18px;flex-wrap:wrap;margin:24px 0}.summary div{border:1px solid #d9e4eb;padding:14px;border-radius:10px;min-width:130px}small{display:block;color:#647b90;margin-bottom:6px}table{width:100%;border-collapse:collapse;margin:14px 0 28px;font-size:11px}th,td{border:1px solid #dce5eb;padding:8px;text-align:left}th{background:#edf5f6}button{padding:10px 16px;background:#087f79;color:#fff;border:0;border-radius:7px;cursor:pointer}@media print{button{display:none}body{padding:0}}</style></head><body><h1>VOLTGUARD</h1><h2>Energy monitoring report</h2><p>Generated ${generated}. This report summarizes readings stored by your educational IoT prototype. It is not a certified electrical safety inspection.</p><div class="summary"><div><small>Latest current</small><b>${fmt(latest.current_a)} A</b></div><div><small>Latest voltage</small><b>${fmt(latest.voltage_v,1)} V</b></div><div><small>Latest temperature</small><b>${fmt(latest.temperature_c,1)} °C</b></div><div><small>Latest power</small><b>${fmt(latest.power_w,1)} W</b></div></div><h3>Recent sensor readings</h3><table><thead><tr><th>Time</th><th>Current (A)</th><th>Voltage (V)</th><th>Temperature (°C)</th><th>Power (W)</th></tr></thead><tbody>${readingRows || "<tr><td colspan='5'>No readings recorded.</td></tr>"}</tbody></table><h3>Recent alerts</h3><table><thead><tr><th>Type</th><th>Message</th><th>Status</th><th>Time</th></tr></thead><tbody>${eventRows || "<tr><td colspan='4'>No alerts recorded.</td></tr>"}</tbody></table><button onclick="window.print()">Print / Save as PDF</button></body></html>`);
+  reportWindow.document.close();
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function setBusy(button, busy, busyText="Please wait…") {
@@ -246,6 +321,21 @@ $("logout").addEventListener("click",async ()=>{
   finally { button.disabled=false; }
 });
 $("refresh").addEventListener("click", refresh);
+$("analytics-range").addEventListener("change", () => drawChart(latestChartRows));
+$("alert-filter").addEventListener("change", renderEvents);
+$("chat-launcher").addEventListener("click", openChat);
+$("chat-close").addEventListener("click", closeChat);
+$("settings-open").addEventListener("click", () => { $("settings-popover").hidden = false; });
+$("settings-close").addEventListener("click", () => { $("settings-popover").hidden = true; });
+$("settings-theme").addEventListener("click", toggleTheme);
+$("report-download").addEventListener("click", downloadReport);
+$("notifications-enable").addEventListener("click", async () => {
+  if (!("Notification" in window)) { $("settings-note").textContent = "This browser does not support desktop notifications."; return; }
+  const permission = Notification.permission === "default" ? await Notification.requestPermission() : Notification.permission;
+  browserAlertsEnabled = permission === "granted";
+  $("notifications-enable").textContent = browserAlertsEnabled ? "Enabled" : "Try again";
+  $("settings-note").textContent = browserAlertsEnabled ? "Browser notifications are enabled for new alerts while this dashboard is open." : "Notification permission was not granted. You can change it in your browser settings.";
+});
 $("chat-form").addEventListener("submit", async (e)=>{
   e.preventDefault();
   const input=$("chat-input"), text=input.value.trim();

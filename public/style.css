@@ -969,3 +969,52 @@ body {
 @media(prefers-reduced-motion:reduce){
   .nav,.metric,.panel,.icon-btn,.theme-toggle,.logout-btn{transition:none}
 }
+
+/* VOLTGUARD DASHBOARD FEATURE ADDITIONS */
+.sensor-live{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.sensor-live.online{color:#59dfbf;border-color:rgba(66,214,196,.32);background:rgba(66,214,196,.08)}
+.sensor-live.offline{color:#f0b66c;border-color:rgba(240,182,108,.3);background:rgba(240,182,108,.07)}
+.sensor-live.online i{background:#42d6c4;box-shadow:0 0 12px #42d6c4}
+.sensor-live.offline i{background:#e8a34e;box-shadow:0 0 10px rgba(232,163,78,.65)}
+.analytics-head{align-items:flex-start}
+.mini-select{background:var(--panel2,#102238);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:11px "DM Sans",sans-serif;outline:none;max-width:145px}
+.analytics-summary{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;margin:-4px 0 14px;border:1px solid var(--line);border-radius:10px;background:rgba(66,214,196,.035)}
+.analytics-summary small,.device-details small{display:block;color:var(--muted);font-size:8px;letter-spacing:1.1px;margin-bottom:5px}
+.analytics-summary strong{font:600 19px "Space Grotesk",sans-serif;color:var(--cyan)}
+.analytics-summary>span{font-size:10px;color:var(--muted)}
+.device-grid{grid-template-columns:1.25fr 1fr}
+.device-identity{display:flex;align-items:center;gap:12px;padding:8px 0 18px}
+.device-symbol{width:43px;height:43px;border-radius:13px;display:grid;place-items:center;background:rgba(66,214,196,.1);color:var(--cyan);font-size:25px}
+.device-identity>div:nth-child(2){min-width:0;flex:1}
+.device-identity b,.device-identity small{display:block}
+.device-identity b{font-size:13px}.device-identity small{font-size:10px;color:var(--muted);margin-top:4px}
+.device-state{font-size:8px;letter-spacing:1px;border-radius:20px;padding:7px 9px;border:1px solid var(--line)}
+.device-state.online{color:#59dfbf;background:rgba(66,214,196,.08);border-color:rgba(66,214,196,.3)}
+.device-state.offline{color:#e8ad65;background:rgba(232,173,101,.07);border-color:rgba(232,173,101,.25)}
+.device-details{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:10px;border-top:1px solid var(--line);padding-top:14px}
+.device-details b{font-size:11px;display:block;overflow-wrap:anywhere}
+.device-footnote{font-size:10px;color:var(--muted);margin:13px 0 0;line-height:1.5}
+.insight-list{display:flex;flex-direction:column}
+.insight-list>div{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted)}
+.insight-list>div:last-child{border-bottom:0}.insight-list b{color:var(--text)}
+.event-copy{min-width:0;flex:1}.event-mark.resolved{background:#42d6c4}.event-mark.critical{background:#ef7777}.event-state{font-style:normal;font-size:7px;letter-spacing:.8px;margin-left:6px;padding:3px 5px;border-radius:5px}
+.event-state.unresolved{color:#e8b36f;background:rgba(232,179,111,.1)}.event-state.resolved{color:#42cdb5;background:rgba(66,205,181,.1)}
+.assistant-card{display:none;position:fixed;z-index:1001;right:25px;bottom:94px;width:min(390px,calc(100vw - 28px));max-height:min(560px,calc(100vh - 125px));overflow:hidden;box-shadow:0 25px 80px rgba(0,0,0,.42);border-color:rgba(66,214,196,.25)}
+.assistant-card.chat-open{display:block;animation:chatPop .18s ease-out}.assistant-card .chat-messages{height:260px;max-height:40vh}
+.chat-head-actions{display:flex;align-items:center;gap:8px}.chat-close,.settings-head>button{border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--text);width:29px;height:29px;font-size:19px;cursor:pointer}
+.chat-launcher{position:fixed;z-index:1002;right:25px;bottom:24px;display:flex;align-items:center;gap:10px;padding:12px 17px;border:1px solid rgba(66,214,196,.55);border-radius:30px;background:linear-gradient(135deg,#123e50,#102b45);color:#e8fffb;box-shadow:0 12px 34px rgba(0,0,0,.35),0 0 24px rgba(66,214,196,.14);font:600 12px "DM Sans",sans-serif;cursor:pointer;transition:transform .2s,box-shadow .2s}
+.chat-launcher:hover{transform:translateY(-3px);box-shadow:0 16px 38px rgba(0,0,0,.4),0 0 28px rgba(66,214,196,.24)}
+.chat-launcher-spark{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:rgba(66,214,196,.17);color:#67e4d3;font-size:15px}
+.chat-launcher-label{white-space:nowrap}
+.settings-popover{position:fixed;z-index:1003;right:90px;top:84px;width:min(340px,calc(100vw - 30px));padding:17px;background:var(--panel);border:1px solid var(--line);border-radius:15px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.settings-popover[hidden]{display:none}.settings-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:13px;border-bottom:1px solid var(--line)}
+.settings-head b,.settings-head small{display:block}.settings-head b{font-size:13px}.settings-head small,.settings-row small{font-size:10px;color:var(--muted);margin-top:4px}
+.settings-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}.settings-row b{font-size:11px;display:block}.settings-action{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel2);color:var(--text);font-size:10px;cursor:pointer;white-space:nowrap}
+.settings-note{font-size:9px;color:var(--muted);line-height:1.5;margin:12px 0 0}
+@keyframes chatPop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+[data-theme="light"] .mini-select,[data-theme="light"] .settings-action,[data-theme="light"] .chat-close,[data-theme="light"] .settings-head>button{background:#f4f8fb;color:#304b63;border-color:#d8e4ed}
+[data-theme="light"] .analytics-summary{background:#f2faf9}
+[data-theme="light"] .insight-list>div{color:#5c7186;border-color:#e5edf3}
+[data-theme="light"] .insight-list b,[data-theme="light"] .device-details b{color:#263f56}
+[data-theme="light"] .assistant-card,[data-theme="light"] .settings-popover{background:linear-gradient(145deg,#fff,#f8fbfd);box-shadow:0 20px 60px rgba(39,70,100,.2)}
+@media(max-width:700px){.device-grid{grid-template-columns:1fr}.assistant-card{right:12px;bottom:83px}.chat-launcher{right:13px;bottom:13px;padding:10px 13px}.settings-popover{right:12px;top:75px}.device-details{grid-template-columns:1fr 1fr}.device-details>div:first-child{grid-column:1/-1}.analytics-head{gap:8px}.mini-select{max-width:130px}.analytics-summary{align-items:flex-start;gap:8px;flex-direction:column}}

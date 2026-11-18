@@ -76,7 +76,7 @@ def require_user(handler):
         return False
     return True
 
-def get_latest_readings(limit=30):
+def get_latest_readings(limit=500):
     if not db_ready():
         return None
     url = f"{SUPABASE_URL}/rest/v1/readings"
