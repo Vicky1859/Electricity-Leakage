@@ -30,22 +30,37 @@ function setAuthMessage(message, success=false) {
   el.classList.toggle("success", Boolean(success));
 }
 function showAuthView(view="login") {
+  $("landing-page").hidden = true;
   $("auth-screen").hidden = false;
   $("app-shell").hidden = true;
+
   $("login-form").hidden = view !== "login";
   $("signup-form").hidden = view !== "signup";
   $("reset-form").hidden = view !== "reset";
   $("update-password-form").hidden = view !== "update-password";
+
   $("auth-login-links").hidden = view !== "login";
   $("auth-signup-links").hidden = view !== "signup";
   $("auth-reset-links").hidden = !["reset", "update-password"].includes(view);
-  $("auth-title").textContent = view === "signup" ? "Create your account" : view === "reset" ? "Reset password" : view === "update-password" ? "Choose a new password" : "Welcome back";
-  $("auth-subtitle").textContent = view === "signup" ? "Register to access your VoltGuard dashboard." : view === "reset" ? "We'll email you a secure password reset link." : view === "update-password" ? "Set a new password for your VoltGuard account." : "Sign in to continue to your energy dashboard.";
+
+  $("auth-title").textContent =
+    view === "signup" ? "Create your account" :
+    view === "reset" ? "Reset password" :
+    view === "update-password" ? "Choose a new password" :
+    "Welcome back";
+
+  $("auth-subtitle").textContent =
+    view === "signup" ? "Register to access your VoltGuard dashboard." :
+    view === "reset" ? "We'll email you a secure password reset link." :
+    view === "update-password" ? "Set a new password for your VoltGuard account." :
+    "Sign in to continue to your energy dashboard.";
+
   setAuthMessage("");
 }
 function showDashboard(session) {
   currentSession = session;
   dashboardVisible = true;
+  $("landing-page").hidden = true;
   $("auth-screen").hidden = true;
   $("app-shell").hidden = false;
   const name = session.user.user_metadata?.full_name || session.user.email || "VoltGuard User";
@@ -57,10 +72,13 @@ function showDashboard(session) {
 function showSignedOut() {
   currentSession = null;
   dashboardVisible = false;
+
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = null;
+
   $("app-shell").hidden = true;
-  showAuthView("login");
+  $("auth-screen").hidden = true;
+  $("landing-page").hidden = false;
 }
 async function api(path, options={}) {
   const {data:{session}} = await supabaseClient.auth.getSession();
@@ -137,6 +155,12 @@ function setBusy(button, busy, busyText="Please wait…") {
 }
 
 $("auth-theme-toggle").addEventListener("click", toggleTheme);
+$("landing-login").addEventListener("click", () => showAuthView("login"));
+$("hero-login").addEventListener("click", () => showAuthView("login"));
+
+$("explore-project").addEventListener("click", () => {
+  $("features").scrollIntoView({ behavior: "smooth" });
+});
 $("dashboard-theme-toggle").addEventListener("click", toggleTheme);
 applyTheme(document.documentElement.dataset.theme || "dark");
 
@@ -213,22 +237,38 @@ $("chat-form").addEventListener("submit", async (e)=>{
 });
 
 async function initializeAuth() {
-  showAuthView("login");
   try {
     if (!window.supabase?.createClient) throw new Error("Supabase client library did not load. Refresh the page and try again.");
     const response=await fetch("/api/config",{cache:"no-store"});
     const config=await response.json();
     if(!response.ok || !config.supabase_url || !config.supabase_anon_key) throw new Error(config.error || "Authentication is not configured yet. Add SUPABASE_ANON_KEY in Vercel Environment Variables.");
     supabaseClient=window.supabase.createClient(config.supabase_url,config.supabase_anon_key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-    supabaseClient.auth.onAuthStateChange((event,session)=>{
-      if(event==="SIGNED_OUT") showSignedOut();
-      else if(event==="PASSWORD_RECOVERY") showAuthView("update-password");
-      else if(session && (event==="SIGNED_IN" || event==="TOKEN_REFRESHED" || event==="USER_UPDATED")) showDashboard(session);
-    });
-    const {data,error}=await supabaseClient.auth.getSession();
-    if(error) throw error;
-    if(data.session) showDashboard(data.session);
-    else showSignedOut();
+    let recoveryInProgress = false;
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (event === "SIGNED_OUT") {
+    showSignedOut();
+  } else if (event === "PASSWORD_RECOVERY") {
+    recoveryInProgress = true;
+    showAuthView("update-password");
+  } else if (
+    session &&
+    (event === "SIGNED_IN" ||
+     event === "TOKEN_REFRESHED" ||
+     event === "USER_UPDATED")
+  ) {
+    if (!recoveryInProgress) showDashboard(session);
+  }
+});
+
+const { data, error } = await supabaseClient.auth.getSession();
+if (error) throw error;
+
+if (data.session && !recoveryInProgress) {
+  showDashboard(data.session);
+} else if (!recoveryInProgress) {
+  showSignedOut();
+}
   } catch(error) {
     showAuthView("login");
     setAuthMessage(error.message || "Could not initialize authentication.");
