@@ -40,6 +40,7 @@ function showAuthView(view="login") {
   $("update-password-form").hidden = view !== "update-password";
 
   $("auth-login-links").hidden = view !== "login";
+  $("google-auth-actions").hidden = view !== "login";
   $("auth-signup-links").hidden = view !== "signup";
   $("auth-reset-links").hidden = !["reset", "update-password"].includes(view);
 
@@ -157,6 +158,28 @@ function setBusy(button, busy, busyText="Please wait…") {
 $("auth-theme-toggle").addEventListener("click", toggleTheme);
 $("landing-login").addEventListener("click", () => showAuthView("login"));
 $("hero-login").addEventListener("click", () => showAuthView("login"));
+$("about-login").addEventListener("click", () => showAuthView("login"));
+
+async function startGoogleSignIn(button) {
+  setBusy(button, true, "Connecting to Google…");
+  try {
+    if (!supabaseClient) throw new Error("Authentication is still loading. Please try again in a moment.");
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) throw error;
+  } catch (error) {
+    showAuthView("login");
+    setAuthMessage(error.message || "Google sign-in could not be started.");
+    setBusy(button, false);
+  }
+}
+
+["hero-google", "google-login"].forEach(id => {
+  const button = $(id);
+  if (button) button.addEventListener("click", () => startGoogleSignIn(button));
+});
 
 $("explore-project").addEventListener("click", () => {
   $("features").scrollIntoView({ behavior: "smooth" });
@@ -235,6 +258,73 @@ $("chat-form").addEventListener("submit", async (e)=>{
     pending.textContent=result.reply || "No response received.";
   } catch(err) { pending.textContent=err.message; }
 });
+
+// Automated landing-page chatbot preview. It uses fixed sample text only;
+// it does not call the live Sarvam AI endpoint.
+const demoConversations = [
+  {
+    question: "Why is my electricity consumption unusually high?",
+    answer: "It may be due to an appliance drawing more power or a change in usage. Compare recent readings with your usual pattern and check which appliances are running."
+  },
+  {
+    question: "What does a 230 V reading mean?",
+    answer: "It is the voltage measured by the prototype at that moment. VoltGuard displays this reading alongside current and power to help you understand the monitored electrical conditions."
+  },
+  {
+    question: "What if the room is empty but an appliance is ON?",
+    answer: "VoltGuard can flag that combination as a reminder, helping users notice appliances that may have been left running."
+  },
+  {
+    question: "Can VoltGuard detect every electrical fault?",
+    answer: "No. This is an educational monitoring prototype with selected sensors and detection rules. It cannot replace certified protection devices or inspection by a qualified electrician."
+  }
+];
+
+const demoDelay = ms => new Promise(resolve => setTimeout(resolve, ms));
+async function typeDemoMessage(text, who, container) {
+  const bubble = document.createElement("div");
+  bubble.className = `demo-message ${who}`;
+  const label = document.createElement("span");
+  label.className = "demo-message-label";
+  label.textContent = who === "user" ? "YOU" : "VOLTGUARD ASSISTANT";
+  const content = document.createElement("span");
+  content.className = "demo-message-text";
+  bubble.append(label, content);
+  container.appendChild(bubble);
+  container.scrollTop = container.scrollHeight;
+
+  const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  if (reducedMotion) {
+    content.textContent = text;
+  } else {
+    for (const character of text) {
+      content.textContent += character;
+      container.scrollTop = container.scrollHeight;
+      await demoDelay(who === "user" ? 24 : 13);
+    }
+  }
+}
+
+async function runLandingChatDemo() {
+  const container = $("demo-chat-body");
+  if (!container) return;
+  let index = 0;
+  while (true) {
+    if (document.hidden || $("landing-page").hidden) {
+      await demoDelay(900);
+      continue;
+    }
+    container.replaceChildren();
+    const pair = demoConversations[index % demoConversations.length];
+    await demoDelay(450);
+    await typeDemoMessage(pair.question, "user", container);
+    await demoDelay(650);
+    await typeDemoMessage(pair.answer, "bot", container);
+    await demoDelay(3300);
+    index += 1;
+  }
+}
+runLandingChatDemo();
 
 async function initializeAuth() {
   try {

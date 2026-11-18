@@ -60,6 +60,7 @@
         <div class="hero-buttons">
           <button id="explore-project">Explore Project ↗</button>
           <button id="hero-login">Get Started →</button>
+          <button id="hero-google" class="google-cta" type="button"><span class="google-g">G</span> Continue with Google</button>
         </div>
 
         <div class="hero-caption">
@@ -170,6 +171,25 @@
       </div>
     </section>
 
+    <section class="landing-section landing-ai" id="ai-demo">
+      <p class="eyebrow">MEET YOUR PROJECT ASSISTANT</p>
+      <h2>See how VoltGuard AI helps.</h2>
+      <p class="landing-ai-intro">A quick example of the kind of questions VoltGuard Assistant can answer. This is an automated sample conversation, not a live AI chat.</p>
+
+      <div class="demo-chat-window">
+        <div class="demo-chat-topbar">
+          <div class="demo-avatar">V</div>
+          <div class="demo-chat-identity"><b>VoltGuard Assistant</b><small><span></span> SAMPLE CONVERSATION</small></div>
+          <span class="demo-ai-label">AI PREVIEW</span>
+        </div>
+        <div class="demo-chat-body" id="demo-chat-body" aria-live="polite" aria-label="Automated sample chatbot conversation">
+          <div class="demo-message bot"><span class="demo-message-label">VOLTGUARD ASSISTANT</span>Welcome! Ask me about energy readings, alerts or how VoltGuard works.</div>
+        </div>
+        <div class="demo-chat-compose"><span>Example questions are typed automatically</span><span class="demo-compose-icon">↗</span></div>
+      </div>
+      <p class="demo-disclaimer">Sample answers are for project demonstration only. They are not electrical safety advice.</p>
+    </section>
+
     <section class="landing-section landing-about" id="about">
       <p class="eyebrow">ABOUT THE PROJECT</p>
       <h2>Meet VoltGuard.</h2>
@@ -198,6 +218,10 @@
       <label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" placeholder="Enter your password" required minlength="6">
       <button class="auth-submit" type="submit" id="login-submit">Sign in</button>
     </form>
+    <div class="google-auth-actions" id="google-auth-actions">
+      <div class="auth-divider"><span>OR</span></div>
+      <button type="button" class="google-auth-button" id="google-login"><span class="google-g">G</span> Continue with Google</button>
+    </div>
     <form id="signup-form" class="auth-form" hidden>
       <label for="signup-name">Full name</label><input id="signup-name" type="text" autocomplete="name" placeholder="Your name" maxlength="80" required>
       <label for="signup-email">Email address</label><input id="signup-email" type="email" autocomplete="email" placeholder="you@example.com" required>
